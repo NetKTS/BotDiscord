@@ -21,7 +21,7 @@ const client = new Client(
         partials: ['MESSAGE', 'CHANNEL', 'REACTION'],
     }
 )
-const EverySaterDayAt12AM = "0 12 * * 6";
+const EverySaterDayAt12AM = "0 13 * * 6";
 var job = new CronJob(EverySaterDayAt12AM,()=>{doingJobInCronJob()},null,true,'Asia/Bangkok');
 job.start();
 
@@ -57,7 +57,7 @@ client.on('ready', ()=>{
 
 client.on('messageCreate',async (message)=>{
     if(message.author.id=="342170391936237569"){
-        message.reply("บ่นไรไอแมว");
+        //message.reply("บ่นไรไอแมว");
     }
     if(message.author.bot && message.content == "เช็คชื่อค้าบ"){
         init()
@@ -138,7 +138,7 @@ function doingJobInCronJob(){
 
 function init(){
     $scope.handupMessage;
-    $scope.MessageAskwhoWar = `<@&706907362153332787> ใครวอบ้างค้าบวันนี้ยกมือเลยย\n`
+    $scope.MessageAskwhoWar = `<@&706907362153332787> ใครวอบ้างค้าบวันนี้ยกมือเลยย ช้าอด\n`
     $scope.MessageAskwhoWar += String(moment().format('DD/MM/YYYY')) +"\n";
     $scope.MessageRandomPosition = "คนวอครบแล้ว!!! มาสุ่มตำแหน่งกันดีกว่า\n"
     $scope.warPerson = [];
@@ -217,7 +217,7 @@ function AddorDeleteMention(user,IsAdd){
 
         count ++;
     }
-    if(count >= 8){
+    if(count >= 9){
         TeamReady();
     }
     $scope.handupMessage.edit($scope.MessageAskwhoWar + Allwar);
