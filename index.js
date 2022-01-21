@@ -1,4 +1,4 @@
-const {Client,Intents, Interaction, MessageButton, MessageActionRow} = require('discord.js');
+const {Client,Intents, Interaction, MessageButton, MessageActionRow, MessageEmbed, MessageAttachment} = require('discord.js');
 const dotenv = require('dotenv');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { REST } = require('@discordjs/rest');
@@ -59,6 +59,9 @@ client.on('messageCreate',async (message)=>{
     if(message.author.id=="342170391936237569"){
         //message.reply("บ่นไรไอแมว");
     }
+    if(message.channelId == "901812970466738197"){
+        console.log(message);
+    }
     if(message.author.bot && message.content == "เช็คชื่อค้าบ"){
         init()
         $scope.handupMessage = await message.reply({content:$scope.MessageAskwhoWar,fetchReply: true});
@@ -76,6 +79,50 @@ client.on('messageCreate',async (message)=>{
             message.delete();
         }
     }
+
+    if(message.content.toLowerCase().startsWith("randomteam&position")){
+        var channel = client.channels.cache.get(message.channelId);
+        if(message.author.id== "310400435678609439" || message.content.toLowerCase().includes("active")){
+            let newmessage = "ลงชื่อสุ่มทีมและตำแหน่งค้าบ"
+            message.delete();
+            $scope.RandomTeamAndPositionMessage = await channel.send(newmessage);
+            $scope.RandomTeamAndPositionMessage.react(RandomEmoji);
+            
+        }else {
+            channel.send(`อย่าซนๆ <@${message.author.id}>`)
+            message.delete();
+        }
+    }
+
+    if(message.content.toLowerCase().startsWith("endrandomteamandposition")){
+        var channel = client.channels.cache.get(message.channelId);
+        if(message.author.id== "310400435678609439" || message.content.toLowerCase().includes("active")){
+            let newmessage = EndRandomTeamAndPosition();
+            message.delete();
+            channel.send("ปิดสุ่มทีมค้าบ");
+            $scope.EndRandomTeamAndPositionMessage = channel.send(newmessage);
+            $scope.RandomTeamAndPositionMessage.delete();
+        }else {
+            channel.send(`อย่าซนๆ <@${message.author.id}>`)
+            message.delete();
+        }
+    }
+    if(message.content.toLocaleLowerCase().startsWith("guide")){
+        var channel = client.channels.cache.get(message.channelId);
+        var Embed = {
+            title:"Some title",
+            image:{
+                url:"attachments://warpic.png"
+            }
+        }
+        const file = new MessageAttachment("./assets/warpic.png");
+        var msg = PlayGuide();
+        console.log(msg)
+        channel.send(msg);
+        channel.send({files:["./assets/warpic.png"]})
+        message.delete();
+    }
+
 })
 
 client.on('messageReactionAdd',async (reaction,user)=>{
@@ -91,6 +138,12 @@ client.on('messageReactionAdd',async (reaction,user)=>{
             startRandom($scope,user)
         }
     }
+
+    if($scope.RandomTeamAndPositionMessage != null){
+        if(reaction.message.id == $scope.RandomTeamAndPositionMessage.id && !user.bot && reaction.emoji.name == RandomEmoji){
+            AddorDeleteMentionInRandomTeamAndPosition(user,true);
+        }
+    }
     
 })
 client.on('messageReactionRemove',async (reaction,user)=>{
@@ -103,6 +156,11 @@ client.on('messageReactionRemove',async (reaction,user)=>{
     if($scope.RandomPositionMessage != null){
         if(reaction.message.id == $scope.RandomPositionMessage.id && !user.bot && reaction.emoji.name == RandomEmoji){
             //
+        }
+    }
+    if($scope.RandomTeamAndPositionMessage != null){
+        if(reaction.message.id == $scope.RandomTeamAndPositionMessage.id && !user.bot && reaction.emoji.name == RandomEmoji){
+            AddorDeleteMentionInRandomTeamAndPosition(user,false);
         }
     }
 })
@@ -142,6 +200,7 @@ function init(){
     $scope.MessageAskwhoWar += String(moment().format('DD/MM/YYYY')) +"\n";
     $scope.MessageRandomPosition = "คนวอครบแล้ว!!! มาสุ่มตำแหน่งกันดีกว่า\n"
     $scope.warPerson = [];
+    $scope.AllRandomPerson = [];
     $scope.RandomPositionMessage = null;
     $scope.PersonModel = {
         id:"",
@@ -192,8 +251,109 @@ function init(){
     console.log("init Function");
 }
 
+function AddorDeleteMentionInRandomTeamAndPosition(user,IsAdd){
+    var RandomPerson = [];
+    RandomPerson.id = user.id;
+    RandomPerson.username = user.username;
+    var count = 1;
+    var message = "ลงชื่อสุ่มทีมและตำแหน่งค้าบ\n\n";
+    if(IsAdd){
+        $scope.AllRandomPerson.push(RandomPerson);
+    }else if(!IsAdd){
+        var delete_index = _.findIndex($scope.warPerson,(item)=>{return item.id == user.id })
+        $scope.AllRandomPerson.splice(delete_index,1)
+    }
+    for(var p of $scope.AllRandomPerson){
+        message += `${count}. <@${p.id}> \n`;
+        count++;
+    }
+    $scope.RandomTeamAndPositionMessage.edit(message);
+}
 
+function EndRandomTeamAndPosition(){
+    $scope.AllRandomPerson = _.shuffle($scope.AllRandomPerson);
+    var count = 1;
+    var team1 = [];
+    var team2 = [];
+    var EndRandomMessage = "";
+    for(var person of $scope.AllRandomPerson){
+        if(count % 2 != 0){
+            team1.push(person);
+        }else{
+            team2.push(person);
+        }
+        count++;
+    }
+    console.log("team1");
+    console.log(team1);
+    console.log("team2");
+    console.log(team2);
+    EndRandomMessage += "Team 1\n"
+    var AllPosition = getAllPosition();
+    AllPosition = _.shuffle(AllPosition);
+    count = 1;
+    for(var one of team1){
+        var position = AllPosition.pop();
+        EndRandomMessage += `${count}. <@${one.id}> ${position.position}\n`;
+        count++;
+    }
+    AllPosition = getAllPosition();
+    AllPosition = _.shuffle(AllPosition);
+    EndRandomMessage += "Team 2\n"
+    count = 1;
+    for(var two of team2){
+        var position = AllPosition.pop();
+        EndRandomMessage += `${count}. <@${two.id}> ${position.position}\n`;
+        count++;
+    }
 
+    return EndRandomMessage;
+}
+function getAllPosition(){
+    var AllPosition =[
+        {
+            position:"หน้าบ้านเรา",
+            item:[0],
+            press:["แท่นหน้าบ้านเรา","แท่นกลางซ้าย"]
+        },
+        {
+            position:"ซ้าย",
+            item:[10,11],
+            press:["แท่นซ้ายบน","แท่นซ้ายล่าง"]
+        },
+        {
+            position:"กลาง",
+            item:[1,2],
+            press:["ถ้ายึดกลางได้ก็ดูเซ็ตกลาง"]
+        },
+        {
+            position:"ขวา",
+            item:[6,9,12],
+            press:["แท่นขวาล่าง","แท่นขวาบน"]
+        },
+        {
+            position:"ซ้ายบนสุด",
+            item:[7,8],
+            press:["แท่นซ้ายบนสุด"]
+        },
+        {
+            position:"ขวาล่างสุด",
+            item:[3],
+            press:["แท่นขวาล่างสุด"]
+        },
+        {
+            position:"โรม",
+            item:[5,14],
+            press:["แท่นกลางขวา"]
+        },
+        {
+            position:"หน้าบ้านมัน",
+            item:[4,13],
+            press:["แท่นหน้าบ้านมัน","ถ้าว่างก็ไปช่วยแท่นกลางขวา"]
+        }
+    ]
+    return AllPosition;
+}
 
 function AddorDeleteMention(user,IsAdd){
     $scope.PersonModel = [];
@@ -222,6 +382,17 @@ function AddorDeleteMention(user,IsAdd){
     }
     $scope.handupMessage.edit($scope.MessageAskwhoWar + Allwar);
 }
+function PlayGuide(){
+    var Allposition = getAllPosition();
+    var message = "";
+    for(var p of Allposition){
+        message += `ตำแหน่ง : ${p.position}
+    ไอเท่ม : ${getItemToString(p.item)}
+    เหยียบแท่น : ${getItemToString(p.press)}\n\n`
+    }
+    
+    return message;
+}
 
 async function TeamReady(){
     if($scope.RandomPositionMessage == null){
@@ -234,6 +405,17 @@ async function TeamReady(){
 function getRandomNumber(min,max) {
     let length = (max+1)-min;
     return min+(Math.floor(Math.random() * length));
-  }
+}
+  
+function getItemToString (allitem){
+    var result = "";
+    _.each(allitem,(item,index)=>{
+        if(index > 0){
+            result += ", ";
+        }
+        result += String(item);
+    });
+    return result
+}
 
 client.login(process.env.TOKEN)
