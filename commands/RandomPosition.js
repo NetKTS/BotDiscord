@@ -6,7 +6,22 @@ module.exports = (scope,user) => {
     if(scope.AllPosition.length > 0){
         if(SelectedUser != null && SelectedUser.Position == null){
             scope.AllPosition = _.shuffle(scope.AllPosition);
-            scope.warPerson[User_index].Position = scope.AllPosition.pop();
+            var SelectedPosition;
+
+            
+            // ล็อคหน้าบ้านมัน
+            if(scope.warPerson[User_index].id == "310400435678609439"){
+                var getIndex = getPosistionIndex(scope.AllPosition,"หน้าบ้านมัน")
+                SelectedPosition = scope.AllPosition.splice(getIndex,1).pop();
+            }else{
+                if(scope.AllPosition[scope.AllPosition.length-1].position == "หน้าบ้านมัน"){
+                    SelectedPosition = scope.AllPosition.shift();
+                }else{
+                    SelectedPosition = scope.AllPosition.pop();
+                }
+            }
+            
+            scope.warPerson[User_index].Position = SelectedPosition;
             var warPersonThatAlreadyRandomPosition = _.filter(scope.warPerson,(person)=>{
                 return person.Position != null;
             });
@@ -36,4 +51,10 @@ function getItemToString (allitem){
         result += String(item);
     });
     return result
+}
+function getPosistionIndex (Allposition,PositionName){
+    var findindex = Allposition.findIndex((item)=>{return item.position == PositionName})
+    if(findindex >= 0){
+        return findindex
+    }
 }

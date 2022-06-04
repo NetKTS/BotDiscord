@@ -45,6 +45,7 @@ dotenv.config();
 
 const handupEmoji = '🙋‍♂️';
 const RandomEmoji = '🎲';
+const allow = true;
 var $scope = [];
 
 client.on('ready', ()=>{
@@ -80,12 +81,14 @@ client.on('messageCreate',async (message)=>{
         }
     }
 
-    if(message.content.toLowerCase().startsWith("randomteam&position")){
+    if(message.content.toLowerCase().startsWith("-vote")){
         var channel = client.channels.cache.get(message.channelId);
-        if(message.author.id== "310400435678609439" || message.content.toLowerCase().includes("active")){
-            let newmessage = "ลงชื่อสุ่มทีมและตำแหน่งค้าบ"
+        
+        if(message.author.id== "310400435678609439" || allow){
+            $scope.VoteMessage = message.content.split("-vote").pop()
+            $scope.RandomTeamAndPositionMessage = await message.reply($scope.VoteMessage)
             message.delete();
-            $scope.RandomTeamAndPositionMessage = await channel.send(newmessage);
+            
             $scope.RandomTeamAndPositionMessage.react(RandomEmoji);
             
         }else {
@@ -94,9 +97,9 @@ client.on('messageCreate',async (message)=>{
         }
     }
 
-    if(message.content.toLowerCase().startsWith("endrandomteamandposition")){
+    if(message.content.toLowerCase().startsWith("-endvote")){
         var channel = client.channels.cache.get(message.channelId);
-        if(message.author.id== "310400435678609439" || message.content.toLowerCase().includes("active")){
+        if(message.author.id== "310400435678609439" || message.content.toLowerCase().includes("active") || allow){
             let newmessage = EndRandomTeamAndPosition();
             message.delete();
             channel.send("ปิดสุ่มทีมค้าบ");
@@ -118,9 +121,8 @@ client.on('messageCreate',async (message)=>{
         const file = new MessageAttachment("./assets/warpic.png");
         var msg = PlayGuide();
         console.log(msg)
-        channel.send(msg);
-        channel.send({files:["./assets/warpic.png"]})
-        message.delete();
+        message.reply(msg)
+        message.reply({files:["./assets/warpic.png"]})
     }
 
 })
@@ -256,7 +258,7 @@ function AddorDeleteMentionInRandomTeamAndPosition(user,IsAdd){
     RandomPerson.id = user.id;
     RandomPerson.username = user.username;
     var count = 1;
-    var message = "ลงชื่อสุ่มทีมและตำแหน่งค้าบ\n\n";
+    var message = `${$scope.VoteMessage}\n\n`;
     if(IsAdd){
         $scope.AllRandomPerson.push(RandomPerson);
     }else if(!IsAdd){
