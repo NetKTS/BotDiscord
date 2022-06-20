@@ -25,7 +25,7 @@ const moment = require("moment");
 const CronJob = require("cron").CronJob;
 const SayHello = require("./SayHello");
 const startRandom = require("./commands/RandomPosition");
-const {scope} = require('./setUpScope')
+const { scope } = require("./setUpScope");
 
 const readline = require("readline").createInterface({
   input: process.stdin,
@@ -41,7 +41,7 @@ const client = new Client({
   partials: ["MESSAGE", "CHANNEL", "REACTION"],
 });
 const EverySaterDayAt12AM = "0 13 * * 6";
-const Cron_For_test = "17 20 * * 4"
+const Cron_For_test = "17 20 * * 4";
 var job = new CronJob(
   EverySaterDayAt12AM,
   () => {
@@ -62,19 +62,26 @@ const commands = [
     .setName("user")
     .setDescription("Replies with user info!"),
   new SlashCommandBuilder().setName("say").setDescription("say!"),
+  new SlashCommandBuilder()
+    .setName("vs")
+    .setDescription("ใส่ User เช่น @net @nook")
+    .addUserOption((option) =>
+      option.setName("user1").setDescription("@...").setRequired(true)
+    )
+    .addUserOption((option) =>
+      option.setName("user2").setDescription("@...").setRequired(true)
+    ),
 ].map((command) => command.toJSON());
 
 const rest = new REST({ version: "9" }).setToken(token);
 
-var MAIN_CH
+var MAIN_CH;
 //config before run bot
-readline.question(`Input Server Id : `, (SERVER_ID) => {
-  readline.question(`Input Main Chanel Id : `, (MAIN_CHAT_CHANEL_ID) => {
-    console.log(`Server Id = ${SERVER_ID}`);
-    console.log(`Main Chanel Id = ${MAIN_CHAT_CHANEL_ID}`);
-    MAIN_CH = MAIN_CHAT_CHANEL_ID;
+readline.question(`Default 1=yes 2=no : `, (IsDefault) => {
+  if (IsDefault == "1" || IsDefault == 1) {
+    MAIN_CH = "505154485148975106";
     rest
-      .put(Routes.applicationGuildCommands(clientId, SERVER_ID), {
+      .put(Routes.applicationGuildCommands(clientId, ServerKapawGuildId), {
         body: commands,
       })
       .then(() => console.log("Successfully registered application commands."))
@@ -82,16 +89,38 @@ readline.question(`Input Server Id : `, (SERVER_ID) => {
     readline.close();
 
     client.login(process.env.TOKEN);
-  });
+  } else {
+    readline.question(`Input Server Id : `, (SERVER_ID) => {
+      readline.question(`Input Main Chanel Id : `, (MAIN_CHAT_CHANEL_ID) => {
+        console.log(`Server Id = ${SERVER_ID}`);
+        console.log(`Main Chanel Id = ${MAIN_CHAT_CHANEL_ID}`);
+        MAIN_CH = MAIN_CHAT_CHANEL_ID;
+        rest
+          .put(Routes.applicationGuildCommands(clientId, SERVER_ID), {
+            body: commands,
+          })
+          .then(() =>
+            console.log("Successfully registered application commands.")
+          )
+          .catch(console.error);
+        readline.close();
+
+        client.login(process.env.TOKEN);
+      });
+    });
+  }
 });
 
 dotenv.config();
 
 const handupEmoji = "🙋‍♂️";
 const RandomEmoji = "🎲";
+const plusEmoji = "🔼";
+const minusEmoji = "🔽";
+
 const allow = true;
-const fullteam = 2;
-var $scope
+const fullteam = 8;
+var $scope;
 
 client.on("ready", () => {
   console.log("I'm Ready");
@@ -101,8 +130,8 @@ client.on("ready", () => {
 });
 
 client.on("messageCreate", async (message) => {
-  if(message.channelId != MAIN_CH){
-    return
+  if (message.channelId != MAIN_CH) {
+    return;
   }
   if (message.author.id == "342170391936237569") {
     //message.reply("บ่นไรไอแมว");
@@ -182,6 +211,7 @@ client.on("messageCreate", async (message) => {
 
 client.on("messageReactionAdd", async (reaction, user) => {
   console.log("add");
+  // console.log(reaction);
   if ($scope.handupMessage != null) {
     if (
       reaction.message.id == $scope.handupMessage.id &&
@@ -211,6 +241,43 @@ client.on("messageReactionAdd", async (reaction, user) => {
       AddorDeleteMentionInRandomTeamAndPosition(user, true);
     }
   }
+  if(!user.bot){
+    var channel = client.channels.cache.get(reaction.message.channelId);
+    var message = await channel.messages.fetch(reaction.message.id)
+    if(message.content.includes(" vs ") && message.content.includes(user.id) && message.author.bot){
+      var messagecontent = message.content;
+      var mainmessage = messagecontent.split("\n")
+      var userInMessage = mainmessage[0].split(" vs ")
+      var isFirstUser = false
+      var scoreMessage = mainmessage[1].split(":")
+      var FirstScore = parseInt(scoreMessage[0])
+      var SecondScore = parseInt(scoreMessage[1])
+      if(userInMessage[0].includes(user.id)){
+        isFirstUser = true
+      }
+      if(reaction.emoji.name == plusEmoji){
+        if(isFirstUser){
+          FirstScore++
+        }else{
+          SecondScore++
+        }
+        message.reactions.resolve(plusEmoji).users.remove(user.id)
+      }else if(reaction.emoji.name == minusEmoji){
+        if(isFirstUser){
+          FirstScore--
+        }else{
+          SecondScore--
+        }
+        message.reactions.resolve(minusEmoji).users.remove(user.id)
+      }
+      var TotalRound = FirstScore + SecondScore
+      var PercentWinRate = (FirstScore / TotalRound) * 100
+      var onlyVSName = mainmessage[0].split("ทั้งหมด")
+      var returnmessage = `${onlyVSName[0]}ทั้งหมด (${TotalRound} รอบ) WinRate( ${parseInt(PercentWinRate)}% : ${ 100 - parseInt(PercentWinRate)}% ) \n ${FirstScore} : ${SecondScore}` 
+      message.edit(returnmessage)
+    }
+    
+}
 });
 client.on("messageReactionRemove", async (reaction, user) => {
   console.log("remove");
@@ -258,16 +325,31 @@ client.on("interactionCreate", async (interaction) => {
       fetchReply: true,
     });
     $scope.handupMessage.react(handupEmoji);
-  } else if (
-    commandName == "say" &&
-    interaction.user.id == "310400435678609439"
-  ) {
+  }
+  if (commandName == "say" && interaction.user.id == "310400435678609439") {
     console.log(options);
     let text = args.join(" ");
     interaction.delete();
     interaction.channel.send(text);
-  } else {
-    interaction.reply("อย่าซนดิ");
+  }
+  if (commandName == "ping") {
+    await interaction.reply("kor test bot noi kub");
+  }
+  if (commandName == "vs") {
+    // const string = interaction.options.getString("user1");
+    const user1 = interaction.options.getUser("user1");
+    const user2 = interaction.options.getUser("user2");
+    var channel = client.channels.cache.get(interaction.channelId);
+    var messagecontent = `<@${user1.id}> vs <@${user2.id}> ทั้งหมด (0 รอบ)\n0 : 0`;
+    newmessage = await interaction.reply({
+      content: messagecontent,
+      fetchReply: true,
+    });
+    await newmessage.react(plusEmoji)
+    await newmessage.react(minusEmoji)
+    console.log(newmessage);
+    console.log(user1);
+    console.log(user2);
   }
 });
 
