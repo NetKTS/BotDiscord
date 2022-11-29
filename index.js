@@ -273,7 +273,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
       var TotalRound = FirstScore + SecondScore
       var PercentWinRate = (FirstScore / TotalRound) * 100
       var onlyVSName = mainmessage[0].split("ทั้งหมด")
-      var returnmessage = `${onlyVSName[0]}ทั้งหมด (${TotalRound} รอบ) WinRate( ${parseInt(PercentWinRate)}% : ${ 100 - parseInt(PercentWinRate)}% ) \n ${FirstScore} : ${SecondScore}` 
+      var returnmessage = `${onlyVSName[0]}ทั้งหมด (${TotalRound} รอบ) WinRate( ${parseInt(PercentWinRate)}% : ${ 100 - parseInt(PercentWinRate)}% ) \n ${FirstScore} : ${SecondScore}\nLastUpdate : ${moment().format('MMMM Do YYYY, h:mm:ss a')} By: <@${user.id}>` 
       message.edit(returnmessage)
     }
     
